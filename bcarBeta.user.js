@@ -13,6 +13,10 @@
 // @grant none
 // ==/UserScript==
 
+// --- SAFETY INIT FIX ---
+window.CustomPrerequisiteFuncs ??= new Map();
+window.CustomImages ??= new Map();
+
 const BCAR_Version = '0.7.10';
 const BCAR_Version_FIX = '';
 
