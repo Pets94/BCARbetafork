@@ -197,7 +197,7 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
     }
 
     async function BCARChatRoomMenuDraw() {
-        modApi.hookFunction('ChatRoomMenuDraw', 4, (args, next) => {
+        modApi.hookFunction('ChatRoomTopMenuSync', 4, (args, next) => {
             if (Player.BCAR.bcarSettings.animationButtonsEnable) {
                 if (Player.BCAR.bcarSettings.animationButtonsPosition === "upperleft") {
                     if (Player.BCAR.bcarSettings.earWigglingEnable) {
