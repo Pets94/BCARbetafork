@@ -989,13 +989,14 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
         if (Player.BCAR.bcarSettings.earWigglingEnable === true) {
             let earsVariations = [Player.BCAR.bcarSettings.earsDefault.ears2, Player.BCAR.bcarSettings.earsDefault.ears1];
             let earsColor = [Player.BCAR.bcarSettings.earsDefault.earsColor2, Player.BCAR.bcarSettings.earsDefault.earsColor1];
-            let earsProperties = [Player.BCAR.bcarSettings.earsDefault.earsProperties2, Player.BCAR.bcarSettings.earsDefault.earsProperties1];
+            let earsProperties = [Player.BCAR.bcarSettings.earsDefault.earsProperty2, Player.BCAR.bcarSettings.earsDefault.earsProperty1];
             let numberWiggles = parseInt(Player.BCAR.bcarSettings.earsDefault.earsCount);
             let delay = parseInt(Player.BCAR.bcarSettings.earsDefault.earsDelay);
             for (let i = 0; i < numberWiggles; i++) {
                 setTimeout(function () {
                     const ears = InventoryWear(Player, earsVariations[i % earsVariations.length], "HairAccessory2", earsColor[i % earsColor.length], undefined, undefined, undefined, false);
-                    if (ears) ears.Property = earsProperties[i % earsProperties.length];
+                    const property = earsProperties[i % earsProperties.length];
+                    if (ears && property) ears.Property = copy_object(property); // restore pose, scale/size, and any other options
                     CharacterRefresh(Player, false);
                     ChatRoomCharacterItemUpdate(Player, "HairAccessory2");
                 }, i * delay);
@@ -1013,9 +1014,9 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
                 Player.BCAR.bcarSettings.tailsDefault.tailsColor2,
                 Player.BCAR.bcarSettings.tailsDefault.tailsColor1
             ];
-            let tailsState = [
-                Player.BCAR.bcarSettings.tailsDefault.tailsState2,
-                Player.BCAR.bcarSettings.tailsDefault.tailsState1
+            let tailsProperties = [
+                Player.BCAR.bcarSettings.tailsDefault.tailsProperty2,
+                Player.BCAR.bcarSettings.tailsDefault.tailsProperty1
             ];
             let numberWags = parseInt(Player.BCAR.bcarSettings.tailsDefault.tailsCount);
             let delay = parseInt(Player.BCAR.bcarSettings.tailsDefault.tailsDelay);
@@ -1030,11 +1031,9 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
                         undefined, undefined, undefined, false
                     );
 
-                    const state = tailsState[i % tailsState.length];
-                    if (state !== undefined && item) {
-                        item.Property ||= {};
-                        item.Property.TypeRecord ||= {};
-                        item.Property.TypeRecord.typed = state; // <- restore corner
+                    const property = tailsProperties[i % tailsProperties.length];
+                    if (property && item) {
+                        item.Property = copy_object(property); // restore pose, scale/size, and any other options
                     }
 
                     CharacterRefresh(Player, false);
@@ -1469,8 +1468,8 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
                 "tailsDelay": 800, // delay in ms
                 "tailsDescription1": "None", //Output for the status page
                 "tailsDescription2": "None",
-                "tailsState1" : undefined,
-                "tailsState2" : undefined,
+                "tailsProperty1": {}, // full Property (TypeRecord/pose, ScaleX, ScaleY, etc.)
+                "tailsProperty2": {},
             },
             wingFlappingEnable: false,
             wingFlappingStatus: "Disabled", //Output for the status page
@@ -1718,7 +1717,7 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
                 Player.BCAR.bcarSettings.earsDefault.ears1 = ears?.Asset?.Name; // what happens if ears is undefined?
                 Player.BCAR.bcarSettings.earsDefault.earsColor1 = ears?.Color; // what happens if ears is undefined?
                 Player.BCAR.bcarSettings.earsDefault.earsDescription1 = ears?.Asset?.Description || "None";
-                Player.BCAR.bcarSettings.earsDefault.earsProperty1 = ears?.Property;
+                Player.BCAR.bcarSettings.earsDefault.earsProperty1 = copy_object(ears?.Property ?? {}); // pose, scale/size, and any other options
                 let updated_text = ``
         if (!Player.BCAR.bcarSettings.earWigglingEnable) {
             Player.BCAR.bcarSettings.earWigglingEnable = true;
@@ -1735,7 +1734,7 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
                 s.earsDefault.ears2 = ears?.Asset?.Name;
                 s.earsDefault.earsColor2 = ears?.Color;
                 s.earsDefault.earsDescription2 = ears?.Asset?.Description || "None";
-                Player.BCAR.bcarSettings.earsDefault.earsProperty2 = ears?.Property;
+                Player.BCAR.bcarSettings.earsDefault.earsProperty2 = copy_object(ears?.Property ?? {}); // pose, scale/size, and any other options
                 ChatRoomSendLocal(
                     `<p style='background-color:#000452;color:#EEEEEE;'><b>Bondage Club Auto React +</b>
                 <br>Secondary ears have been updated!</p>`.replaceAll('\n', ''), wt.info
@@ -1860,14 +1859,13 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
         const cmd = argsList[0];
         const s = Player?.BCAR?.bcarSettings;
         const tails = InventoryGet(Player, "TailStraps");
-        const tailState = tails?.Property?.TypeRecord?.typed; // <- current corner (e.g. 3)
 
         switch (cmd) {
             case 'tail1':
                 s.tailsDefault.tails1 = tails?.Asset?.Name;
                 s.tailsDefault.tailsColor1 = tails?.Color;
                 s.tailsDefault.tailsDescription1 = tails?.Asset?.Description || "None";
-                s.tailsDefault.tailsState1 = tailState; // <- save pose
+                s.tailsDefault.tailsProperty1 = copy_object(tails?.Property ?? {}); // pose, scale/size, and any other options
 
                 let updated_text = ``;
                 if (!s.tailWaggingEnable) {
@@ -1886,7 +1884,7 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
                 s.tailsDefault.tails2 = tails?.Asset?.Name;
                 s.tailsDefault.tailsColor2 = tails?.Color;
                 s.tailsDefault.tailsDescription2 = tails?.Asset?.Description;
-                s.tailsDefault.tailsState2 = tailState; // <- save pose
+                s.tailsDefault.tailsProperty2 = copy_object(tails?.Property ?? {}); // pose, scale/size, and any other options
                 ChatRoomSendLocal(
                     `<p style='background-color:#000452;color:#EEEEEE;'><b>Bondage Club Auto React +</b>
                 <br>Secondary tail has been updated!</p>`.replaceAll('\n', ''), wt.info
@@ -2233,7 +2231,7 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
             profile.wingFlappingStatus = Player.BCAR.bcarSettings.wingFlappingStatus;
 
             for (const item of ['ears', 'tails', 'wings']) {
-                profile[`${item}Default`] = Player.BCAR.bcarSettings[`${item}Default`]
+                profile[`${item}Default`] = copy_object(Player.BCAR.bcarSettings[`${item}Default`])
             }
 
             ChatRoomSendLocal(
@@ -2265,13 +2263,13 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
             } // the loop ends here
             if (Player?.BCAR?.bcarSettings?.earsDefault?.ears1) {
                 const ears = InventoryWear(Player, profile?.earsDefault?.ears1, "HairAccessory2", profile?.earsDefault?.earsColor1);
-                ears.Property = profile?.earsDefault?.earsProperty1;
+                if (ears) ears.Property = copy_object(profile?.earsDefault?.earsProperty1 ?? {});
             } else {
                 InventoryRemove(Player, "HairAccessory2");
             }
             if (Player?.BCAR?.bcarSettings?.tailsDefault?.tails1) {
                 const tail = InventoryWear(Player, profile?.tailsDefault?.tails1, "TailStraps", profile?.tailsDefault?.tailsColor1);
-                tail.Property = profile?.tailsDefault?.tailsProperty1;
+                if (tail) tail.Property = copy_object(profile?.tailsDefault?.tailsProperty1 ?? {});
             } else {
                 InventoryRemove(Player, "TailStraps");
             }
@@ -4522,15 +4520,15 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
             Player.BCAR.bcarSettings.profile1Saved = true;
             Player.BCAR.bcarSettings.profile1.earWigglingEnable = Player.BCAR.bcarSettings.earWigglingEnable;
             Player.BCAR.bcarSettings.profile1.earWigglingStatus = Player.BCAR.bcarSettings.earWigglingStatus;
-            Player.BCAR.bcarSettings.profile1.earsDefault = Player.BCAR.bcarSettings.earsDefault;
+            Player.BCAR.bcarSettings.profile1.earsDefault = copy_object(Player.BCAR.bcarSettings.earsDefault);
 
             Player.BCAR.bcarSettings.profile1.tailWaggingEnable = Player.BCAR.bcarSettings.tailWaggingEnable;
             Player.BCAR.bcarSettings.profile1.tailWaggingStatus = Player.BCAR.bcarSettings.tailWaggingStatus;
-            Player.BCAR.bcarSettings.profile1.tailsDefault = Player.BCAR.bcarSettings.tailsDefault;
+            Player.BCAR.bcarSettings.profile1.tailsDefault = copy_object(Player.BCAR.bcarSettings.tailsDefault);
 
             Player.BCAR.bcarSettings.profile1.wingFlappingEnable = Player.BCAR.bcarSettings.wingFlappingEnable;
             Player.BCAR.bcarSettings.profile1.wingFlappingStatus = Player.BCAR.bcarSettings.wingFlappingStatus;
-            Player.BCAR.bcarSettings.profile1.wingsDefault = Player.BCAR.bcarSettings.wingsDefault;
+            Player.BCAR.bcarSettings.profile1.wingsDefault = copy_object(Player.BCAR.bcarSettings.wingsDefault);
             PreferenceMessage = "Profile 1 was saved.";
             bcarSettingsSave();
         }
@@ -4541,18 +4539,31 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
                 PreferenceMessage = "Profile 1 not found.";
             }
             else {
-                if (Player?.BCAR?.bcarSettings?.earsDefault?.ears1) {
-                    InventoryWear(Player, Player?.BCAR?.bcarSettings?.profile1?.earsDefault?.ears1, "HairAccessory2", Player?.BCAR?.bcarSettings?.profile1?.earsDefault?.earsColor1);
+                const loadedProfile1 = Player.BCAR.bcarSettings.profile1;
+                Player.BCAR.bcarSettings.earWigglingEnable = loadedProfile1.earWigglingEnable;
+                Player.BCAR.bcarSettings.earWigglingStatus = loadedProfile1.earWigglingStatus;
+                Player.BCAR.bcarSettings.tailWaggingEnable = loadedProfile1.tailWaggingEnable;
+                Player.BCAR.bcarSettings.tailWaggingStatus = loadedProfile1.tailWaggingStatus;
+                Player.BCAR.bcarSettings.wingFlappingEnable = loadedProfile1.wingFlappingEnable;
+                Player.BCAR.bcarSettings.wingFlappingStatus = loadedProfile1.wingFlappingStatus;
+                Player.BCAR.bcarSettings.earsDefault = copy_object(loadedProfile1.earsDefault);
+                Player.BCAR.bcarSettings.tailsDefault = copy_object(loadedProfile1.tailsDefault);
+                Player.BCAR.bcarSettings.wingsDefault = copy_object(loadedProfile1.wingsDefault);
+
+                if (Player.BCAR.bcarSettings.earsDefault?.ears1) {
+                    const loadedEars1 = InventoryWear(Player, Player.BCAR.bcarSettings.earsDefault.ears1, "HairAccessory2", Player.BCAR.bcarSettings.earsDefault.earsColor1);
+                    if (loadedEars1) loadedEars1.Property = copy_object(Player.BCAR.bcarSettings.earsDefault.earsProperty1 ?? {});
                 } else {
                     InventoryRemove(Player, "HairAccessory2");
                 }
-                if (Player?.BCAR?.bcarSettings?.tailsDefault?.tails1) {
-                    InventoryWear(Player, Player?.BCAR?.bcarSettings?.profile1?.tailsDefault?.tails1, "TailStraps", Player?.BCAR?.bcarSettings?.profile1?.tailsDefault?.tailsColor1);
+                if (Player.BCAR.bcarSettings.tailsDefault?.tails1) {
+                    const loadedTail1 = InventoryWear(Player, Player.BCAR.bcarSettings.tailsDefault.tails1, "TailStraps", Player.BCAR.bcarSettings.tailsDefault.tailsColor1);
+                    if (loadedTail1) loadedTail1.Property = copy_object(Player.BCAR.bcarSettings.tailsDefault.tailsProperty1 ?? {});
                 } else {
                     InventoryRemove(Player, "TailStraps");
                 }
-                if (Player?.BCAR?.bcarSettings?.wingsDefault?.wings1) {
-                    InventoryWear(Player, Player?.BCAR?.bcarSettings?.profile1?.wingsDefault?.wings1, "Wings", Player?.BCAR?.bcarSettings?.profile1?.wingsDefault?.wingsColor1);
+                if (Player.BCAR.bcarSettings.wingsDefault?.wings1) {
+                    InventoryWear(Player, Player.BCAR.bcarSettings.wingsDefault.wings1, "Wings", Player.BCAR.bcarSettings.wingsDefault.wingsColor1);
                 } else {
                     InventoryRemove(Player, "Wings");
                 }
@@ -4589,15 +4600,15 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
             Player.BCAR.bcarSettings.profile2Saved = true;
             Player.BCAR.bcarSettings.profile2.earWigglingEnable = Player.BCAR.bcarSettings.earWigglingEnable;
             Player.BCAR.bcarSettings.profile2.earWigglingStatus = Player.BCAR.bcarSettings.earWigglingStatus;
-            Player.BCAR.bcarSettings.profile2.earsDefault = Player.BCAR.bcarSettings.earsDefault;
+            Player.BCAR.bcarSettings.profile2.earsDefault = copy_object(Player.BCAR.bcarSettings.earsDefault);
 
             Player.BCAR.bcarSettings.profile2.tailWaggingEnable = Player.BCAR.bcarSettings.tailWaggingEnable;
             Player.BCAR.bcarSettings.profile2.tailWaggingStatus = Player.BCAR.bcarSettings.tailWaggingStatus;
-            Player.BCAR.bcarSettings.profile2.tailsDefault = Player.BCAR.bcarSettings.tailsDefault;
+            Player.BCAR.bcarSettings.profile2.tailsDefault = copy_object(Player.BCAR.bcarSettings.tailsDefault);
 
             Player.BCAR.bcarSettings.profile2.wingFlappingEnable = Player.BCAR.bcarSettings.wingFlappingEnable;
             Player.BCAR.bcarSettings.profile2.wingFlappingStatus = Player.BCAR.bcarSettings.wingFlappingStatus;
-            Player.BCAR.bcarSettings.profile2.wingsDefault = Player.BCAR.bcarSettings.wingsDefault;
+            Player.BCAR.bcarSettings.profile2.wingsDefault = copy_object(Player.BCAR.bcarSettings.wingsDefault);
             PreferenceMessage = "Profile 2 was saved.";
             bcarSettingsSave();
         }
@@ -4608,18 +4619,31 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
                 PreferenceMessage = "Profile 2 not found.";
             }
             else {
-                if (Player?.BCAR?.bcarSettings?.earsDefault?.ears1) {
-                    InventoryWear(Player, Player?.BCAR?.bcarSettings?.profile2?.earsDefault?.ears1, "HairAccessory2", Player?.BCAR?.bcarSettings?.profile2?.earsDefault?.earsColor1);
+                const loadedProfile2 = Player.BCAR.bcarSettings.profile2;
+                Player.BCAR.bcarSettings.earWigglingEnable = loadedProfile2.earWigglingEnable;
+                Player.BCAR.bcarSettings.earWigglingStatus = loadedProfile2.earWigglingStatus;
+                Player.BCAR.bcarSettings.tailWaggingEnable = loadedProfile2.tailWaggingEnable;
+                Player.BCAR.bcarSettings.tailWaggingStatus = loadedProfile2.tailWaggingStatus;
+                Player.BCAR.bcarSettings.wingFlappingEnable = loadedProfile2.wingFlappingEnable;
+                Player.BCAR.bcarSettings.wingFlappingStatus = loadedProfile2.wingFlappingStatus;
+                Player.BCAR.bcarSettings.earsDefault = copy_object(loadedProfile2.earsDefault);
+                Player.BCAR.bcarSettings.tailsDefault = copy_object(loadedProfile2.tailsDefault);
+                Player.BCAR.bcarSettings.wingsDefault = copy_object(loadedProfile2.wingsDefault);
+
+                if (Player.BCAR.bcarSettings.earsDefault?.ears1) {
+                    const loadedEars2 = InventoryWear(Player, Player.BCAR.bcarSettings.earsDefault.ears1, "HairAccessory2", Player.BCAR.bcarSettings.earsDefault.earsColor1);
+                    if (loadedEars2) loadedEars2.Property = copy_object(Player.BCAR.bcarSettings.earsDefault.earsProperty1 ?? {});
                 } else {
                     InventoryRemove(Player, "HairAccessory2");
                 }
-                if (Player?.BCAR?.bcarSettings?.tailsDefault?.tails1) {
-                    InventoryWear(Player, Player?.BCAR?.bcarSettings?.profile2?.tailsDefault?.tails1, "TailStraps", Player?.BCAR?.bcarSettings?.profile2?.tailsDefault?.tailsColor1);
+                if (Player.BCAR.bcarSettings.tailsDefault?.tails1) {
+                    const loadedTail2 = InventoryWear(Player, Player.BCAR.bcarSettings.tailsDefault.tails1, "TailStraps", Player.BCAR.bcarSettings.tailsDefault.tailsColor1);
+                    if (loadedTail2) loadedTail2.Property = copy_object(Player.BCAR.bcarSettings.tailsDefault.tailsProperty1 ?? {});
                 } else {
                     InventoryRemove(Player, "TailStraps");
                 }
-                if (Player?.BCAR?.bcarSettings?.wingsDefault?.wings1) {
-                    InventoryWear(Player, Player?.BCAR?.bcarSettings?.profile2?.wingsDefault?.wings1, "Wings", Player?.BCAR?.bcarSettings?.profile2?.wingsDefault?.wingsColor1);
+                if (Player.BCAR.bcarSettings.wingsDefault?.wings1) {
+                    InventoryWear(Player, Player.BCAR.bcarSettings.wingsDefault.wings1, "Wings", Player.BCAR.bcarSettings.wingsDefault.wingsColor1);
                 } else {
                     InventoryRemove(Player, "Wings");
                 }
@@ -4656,37 +4680,50 @@ var bcModSDK = function () { "use strict"; const o = "1.2.0"; function e(o) { al
             Player.BCAR.bcarSettings.profile3Saved = true;
             Player.BCAR.bcarSettings.profile3.earWigglingEnable = Player.BCAR.bcarSettings.earWigglingEnable;
             Player.BCAR.bcarSettings.profile3.earWigglingStatus = Player.BCAR.bcarSettings.earWigglingStatus;
-            Player.BCAR.bcarSettings.profile3.earsDefault = Player.BCAR.bcarSettings.earsDefault;
+            Player.BCAR.bcarSettings.profile3.earsDefault = copy_object(Player.BCAR.bcarSettings.earsDefault);
 
             Player.BCAR.bcarSettings.profile3.tailWaggingEnable = Player.BCAR.bcarSettings.tailWaggingEnable;
             Player.BCAR.bcarSettings.profile3.tailWaggingStatus = Player.BCAR.bcarSettings.tailWaggingStatus;
-            Player.BCAR.bcarSettings.profile3.tailsDefault = Player.BCAR.bcarSettings.tailsDefault;
+            Player.BCAR.bcarSettings.profile3.tailsDefault = copy_object(Player.BCAR.bcarSettings.tailsDefault);
 
             Player.BCAR.bcarSettings.profile3.wingFlappingEnable = Player.BCAR.bcarSettings.wingFlappingEnable;
             Player.BCAR.bcarSettings.profile3.wingFlappingStatus = Player.BCAR.bcarSettings.wingFlappingStatus;
-            Player.BCAR.bcarSettings.profile3.wingsDefault = Player.BCAR.bcarSettings.wingsDefault;
+            Player.BCAR.bcarSettings.profile3.wingsDefault = copy_object(Player.BCAR.bcarSettings.wingsDefault);
             PreferenceMessage = "Profile 3 was saved.";
             bcarSettingsSave();
         }
 
         // Load Profile 3             [BUTTON]
         if (MouseIn(500 + 550, getYPos(2) - 32, 200, 64))
-            if (!Player.BCAR.bcarSettings.profile2Saved) {
+            if (!Player.BCAR.bcarSettings.profile3Saved) {
                 PreferenceMessage = "Profile 3 not found.";
             }
             else {
-                if (Player?.BCAR?.bcarSettings?.earsDefault?.ears1) {
-                    InventoryWear(Player, Player?.BCAR?.bcarSettings?.profile3?.earsDefault?.ears1, "HairAccessory2", Player?.BCAR?.bcarSettings?.profile3?.earsDefault?.earsColor1);
+                const loadedProfile3 = Player.BCAR.bcarSettings.profile3;
+                Player.BCAR.bcarSettings.earWigglingEnable = loadedProfile3.earWigglingEnable;
+                Player.BCAR.bcarSettings.earWigglingStatus = loadedProfile3.earWigglingStatus;
+                Player.BCAR.bcarSettings.tailWaggingEnable = loadedProfile3.tailWaggingEnable;
+                Player.BCAR.bcarSettings.tailWaggingStatus = loadedProfile3.tailWaggingStatus;
+                Player.BCAR.bcarSettings.wingFlappingEnable = loadedProfile3.wingFlappingEnable;
+                Player.BCAR.bcarSettings.wingFlappingStatus = loadedProfile3.wingFlappingStatus;
+                Player.BCAR.bcarSettings.earsDefault = copy_object(loadedProfile3.earsDefault);
+                Player.BCAR.bcarSettings.tailsDefault = copy_object(loadedProfile3.tailsDefault);
+                Player.BCAR.bcarSettings.wingsDefault = copy_object(loadedProfile3.wingsDefault);
+
+                if (Player.BCAR.bcarSettings.earsDefault?.ears1) {
+                    const loadedEars3 = InventoryWear(Player, Player.BCAR.bcarSettings.earsDefault.ears1, "HairAccessory2", Player.BCAR.bcarSettings.earsDefault.earsColor1);
+                    if (loadedEars3) loadedEars3.Property = copy_object(Player.BCAR.bcarSettings.earsDefault.earsProperty1 ?? {});
                 } else {
                     InventoryRemove(Player, "HairAccessory2");
                 }
-                if (Player?.BCAR?.bcarSettings?.tailsDefault?.tails1) {
-                    InventoryWear(Player, Player?.BCAR?.bcarSettings?.profile3?.tailsDefault?.tails1, "TailStraps", Player?.BCAR?.bcarSettings?.profile3?.tailsDefault?.tailsColor1);
+                if (Player.BCAR.bcarSettings.tailsDefault?.tails1) {
+                    const loadedTail3 = InventoryWear(Player, Player.BCAR.bcarSettings.tailsDefault.tails1, "TailStraps", Player.BCAR.bcarSettings.tailsDefault.tailsColor1);
+                    if (loadedTail3) loadedTail3.Property = copy_object(Player.BCAR.bcarSettings.tailsDefault.tailsProperty1 ?? {});
                 } else {
                     InventoryRemove(Player, "TailStraps");
                 }
-                if (Player?.BCAR?.bcarSettings?.wingsDefault?.wings1) {
-                    InventoryWear(Player, Player?.BCAR?.bcarSettings?.profile3?.wingsDefault?.wings1, "Wings", Player?.BCAR?.bcarSettings?.profile3?.wingsDefault?.wingsColor1);
+                if (Player.BCAR.bcarSettings.wingsDefault?.wings1) {
+                    InventoryWear(Player, Player.BCAR.bcarSettings.wingsDefault.wings1, "Wings", Player.BCAR.bcarSettings.wingsDefault.wingsColor1);
                 } else {
                     InventoryRemove(Player, "Wings");
                 }
